@@ -96,7 +96,7 @@ public class S3Repository extends AbstractRepository {
 			S3Object[] objects = getService().listObjects(bucket, key, "");
 			List<String> keys = new ArrayList<String>(objects.length);
 			for (S3Object object : objects) {
-				keys.add(object.getKey());
+				keys.add("s3://" + bucket.getName() + "/" + object.getKey());
 			}
 			return keys;
 		}
