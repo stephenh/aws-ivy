@@ -20,6 +20,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.ivy.plugins.resolver.RepositoryResolver;
+import org.apache.ivy.util.Message;
 
 /**
  * A dependency resolver that looks to an S3 repository to resolve dependencies.
@@ -33,6 +34,7 @@ public class S3Resolver extends RepositoryResolver {
 	}
 	
 	public void setAccessKey(String accessKey) {
+		Message.debug("S3Resolver using accessKey " + accessKey);
 		((S3Repository)getRepository()).setAccessKey(accessKey);
 	}
 	
