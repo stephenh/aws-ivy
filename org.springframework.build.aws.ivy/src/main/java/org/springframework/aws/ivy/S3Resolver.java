@@ -42,6 +42,10 @@ public class S3Resolver extends RepositoryResolver {
 		((S3Repository)getRepository()).setSecretKey(secretKey);
 	}
 
+	public void setAcl(String acl) {
+		((S3Repository)getRepository()).setAcl(acl);
+	}
+
 	public S3Resolver() {
 		setRepository(new S3Repository());
 	}
