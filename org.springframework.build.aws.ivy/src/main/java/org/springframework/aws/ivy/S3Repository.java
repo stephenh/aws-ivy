@@ -50,6 +50,8 @@ public class S3Repository extends AbstractRepository {
 
 	private S3Service service;
 
+	private AccessControlList acl = AccessControlList.REST_CANNED_PUBLIC_READ;
+
 	private Map<String, S3Resource> resourceCache = new HashMap<String, S3Resource>();
 
 	public void setAccessKey(String accessKey) {
@@ -58,6 +60,20 @@ public class S3Repository extends AbstractRepository {
 
 	public void setSecretKey(String secretKey) {
 		this.secretKey = secretKey;
+	}
+
+	public void setAcl(String acl) {
+		if ("PRIVATE".equals(acl)) {
+			this.acl = AccessControlList.REST_CANNED_PRIVATE;
+		} else if ("PUBLIC_READ".equals(acl)) {
+			this.acl = AccessControlList.REST_CANNED_PUBLIC_READ;
+		} else if ("PUBLIC_READ_WRITE".equals(acl)) {
+			this.acl = AccessControlList.REST_CANNED_PUBLIC_READ_WRITE;
+		} else if ("AUTHENTICATED_READ".equals(acl)) {
+			this.acl = AccessControlList.REST_CANNED_AUTHENTICATED_READ;
+		} else {
+			throw new IllegalArgumentException("Unknown acl " + acl);
+		}
 	}
 
 	public void get(String source, File destination) throws IOException {
@@ -112,7 +128,7 @@ public class S3Repository extends AbstractRepository {
 		buildDestinationPath(bucket, getDestinationPath(key));
 
 		S3Object object = new S3Object(bucket, key);
-		object.setAcl(AccessControlList.REST_CANNED_PUBLIC_READ);
+		object.setAcl(acl);
 		object.setDataInputFile(source);
 		object.setContentLength(source.length());
 		try {
@@ -144,7 +160,7 @@ public class S3Repository extends AbstractRepository {
 
 	private void buildDestinationPath(S3Bucket bucket, String destination) {
 		S3Object object = new S3Object(bucket, destination + "/");
-		object.setAcl(AccessControlList.REST_CANNED_PUBLIC_READ);
+		object.setAcl(acl);
 		object.setContentLength(0);
 		try {
 			getService().putObject(bucket, object);
