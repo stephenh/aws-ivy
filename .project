@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>org.springframework.build.aws.ivy</name>
+	<name>aws-ivy</name>
 	<comment></comment>
 	<projects>
 	</projects>
