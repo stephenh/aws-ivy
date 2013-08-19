@@ -5,7 +5,6 @@
 	<classpathentry kind="src" output="target/test-classes" path="src/test/java"/>
 	<classpathentry kind="src" path="src/test/resources"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="var" path="AWS_ANT_IVY_CACHE/org.jets3t/com.springsource.org.jets3t/0.7.1/com.springsource.org.jets3t-0.7.1.jar" sourcepath="/DOWNLOADS/jets3t-0.7.0/src"/>
-	<classpathentry kind="var" path="AWS_ANT_IVY_CACHE/org.apache.ant/com.springsource.org.apache.ivy/2.0.0.beta2/com.springsource.org.apache.ivy-2.0.0.beta2.jar" sourcepath="/AWS_ANT_IVY_CACHE/org.apache.ant/com.springsource.org.apache.ivy/2.0.0.beta2/com.springsource.org.apache.ivy-sources-2.0.0.beta2.jar"/>
+	<classpathentry exported="true" kind="con" path="org.apache.ivyde.eclipse.cpcontainer.IVYDE_CONTAINER/?project=org.springframework.build.aws.ivy&amp;ivyXmlPath=ivy.xml&amp;confs=*&amp;ivySettingsPath=ivysettings.xml&amp;loadSettingsOnDemand=false&amp;ivyUserDir=&amp;propertyFiles="/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
