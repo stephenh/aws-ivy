@@ -19,8 +19,6 @@ package org.springframework.aws.ivy;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import org.jets3t.service.model.S3Bucket;
-
 /**
  * A utility class for parsing full URIs into S3 component parts.
  * 
@@ -33,8 +31,8 @@ public class S3Utils {
 	 * @param uri The URI to parse
 	 * @return An S3 bucket for the given URI
 	 */
-	public static S3Bucket getBucket(String uri) {
-		return new S3Bucket(getUri(uri).getHost());
+	public static String getBucket(String uri) {
+		return getUri(uri).getHost();
 	}
 
 	/**
@@ -47,7 +45,6 @@ public class S3Utils {
 	}
 
 	private static URI getUri(String uri) {
-
 		try {
 			return new URI(uri);
 		}

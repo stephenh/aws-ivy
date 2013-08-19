@@ -23,8 +23,7 @@
 	</publications>
 
 	<dependencies>
-		<!--dependency org="com.amazonaws" name="aws-java-sdk" rev="1.5.3" conf="compile->compile" -->
-		<dependency org="net.java.dev.jets3t" name="jets3t" rev="0.7.1" conf="compile->default"/>
+		<dependency org="com.amazonaws" name="aws-java-sdk" rev="1.5.3" conf="compile->default"/>
 		<dependency org="org.apache.ivy" name="ivy" rev="2.3.0" conf="compile->default"/>
 	</dependencies>
 

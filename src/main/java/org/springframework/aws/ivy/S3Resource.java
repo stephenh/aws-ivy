@@ -20,10 +20,10 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.apache.ivy.plugins.repository.Resource;
-import org.jets3t.service.S3Service;
-import org.jets3t.service.S3ServiceException;
-import org.jets3t.service.model.S3Bucket;
-import org.jets3t.service.model.S3Object;
+
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 /**
  * A Resource implementation that extracts its data from an S3 resource.
@@ -32,24 +32,22 @@ import org.jets3t.service.model.S3Object;
  */
 public class S3Resource implements Resource {
 
-	private S3Service service;
+	private final AmazonS3 service;
+	private final S3ObjectSummary summary;
 
-	private S3Bucket bucket;
-
-	private String key;
-
-	private boolean exists;
-
-	private long contentLength;
-
-	private long lastModified;
-
-	private String name;
-
-	public S3Resource(S3Service service, String uri) {
+	public S3Resource(AmazonS3 service, S3ObjectSummary summary) {
 		this.service = service;
-		initializeS3(uri);
-		initalizeResource();
+		this.summary = summary;
+	}
+
+	public S3Resource(AmazonS3 service, String uri) {
+		this.service = service;
+		ObjectListing objects = service.listObjects(S3Utils.getBucket(uri), S3Utils.getKey(uri));
+		if (objects.getObjectSummaries().size() == 0) {
+			summary = null;
+		} else {
+			summary = objects.getObjectSummaries().get(0);
+		}
 	}
 
 	public Resource clone(String newUri) {
@@ -57,19 +55,19 @@ public class S3Resource implements Resource {
 	}
 
 	public boolean exists() {
-		return exists;
+		return summary != null;
 	}
 
 	public long getContentLength() {
-		return contentLength;
+		return summary == null ? 0 : summary.getSize();
 	}
 
 	public long getLastModified() {
-		return lastModified;
+		return summary == null ? 0 : summary.getLastModified().getTime();
 	}
 
 	public String getName() {
-		return name;
+		return "s3://" + summary.getBucketName() + "/" + summary.getKey();
 	}
 
 	public boolean isLocal() {
@@ -77,38 +75,11 @@ public class S3Resource implements Resource {
 	}
 
 	public InputStream openStream() throws IOException {
-		try {
-			return service.getObject(bucket, key).getDataInputStream();
-		}
-		catch (S3ServiceException e) {
-			throw new S3RepositoryException(e);
-		}
-	}
-
-	private void initializeS3(String uri) {
-		this.bucket = S3Utils.getBucket(uri);
-		this.key = S3Utils.getKey(uri);
-	}
-
-	private void initalizeResource() {
-		try {
-			S3Object details = service.getObjectDetails(bucket, key);
-
-			this.exists = true;
-			this.contentLength = details.getContentLength();
-			this.lastModified = details.getLastModifiedDate().getTime();
-			this.name = "s3://" + details.getBucketName() + "/" + details.getKey();
-		}
-		catch (S3ServiceException e) {
-			this.exists = false;
-			this.contentLength = 0;
-			this.lastModified = 0;
-			this.name = "";
-		}
+		return service.getObject(summary.getBucketName(), summary.getKey()).getObjectContent();
 	}
 
 	@Override
 	public String toString() {
-		return name;
+		return getName();
 	}
 }

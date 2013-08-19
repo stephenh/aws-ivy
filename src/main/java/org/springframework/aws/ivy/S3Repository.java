@@ -29,13 +29,16 @@ import org.apache.ivy.plugins.repository.RepositoryCopyProgressListener;
 import org.apache.ivy.plugins.repository.Resource;
 import org.apache.ivy.plugins.repository.TransferEvent;
 import org.apache.ivy.util.FileUtil;
-import org.jets3t.service.S3Service;
-import org.jets3t.service.S3ServiceException;
-import org.jets3t.service.acl.AccessControlList;
-import org.jets3t.service.impl.rest.httpclient.RestS3Service;
-import org.jets3t.service.model.S3Bucket;
-import org.jets3t.service.model.S3Object;
-import org.jets3t.service.security.AWSCredentials;
+
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 /**
  * A repository the allows you to upload and download from an S3 repository.
@@ -45,13 +48,10 @@ import org.jets3t.service.security.AWSCredentials;
 public class S3Repository extends AbstractRepository {
 
 	private String accessKey;
-
 	private String secretKey;
-
-	private S3Service service;
-
-	private AccessControlList acl = AccessControlList.REST_CANNED_PUBLIC_READ;
-
+	private AmazonS3 service;
+	private CannedAccessControlList acl = CannedAccessControlList.PublicRead;
+	// when doing an s3ls in list(), we remember the S3Resource so we later don't have to s3cat it in getResource()
 	private Map<String, S3Resource> resourceCache = new HashMap<String, S3Resource>();
 
 	public void setAccessKey(String accessKey) {
@@ -64,13 +64,13 @@ public class S3Repository extends AbstractRepository {
 
 	public void setAcl(String acl) {
 		if ("PRIVATE".equals(acl)) {
-			this.acl = AccessControlList.REST_CANNED_PRIVATE;
+			this.acl = CannedAccessControlList.Private;
 		} else if ("PUBLIC_READ".equals(acl)) {
-			this.acl = AccessControlList.REST_CANNED_PUBLIC_READ;
+			this.acl = CannedAccessControlList.PublicRead;
 		} else if ("PUBLIC_READ_WRITE".equals(acl)) {
-			this.acl = AccessControlList.REST_CANNED_PUBLIC_READ_WRITE;
+			this.acl = CannedAccessControlList.PublicReadWrite;
 		} else if ("AUTHENTICATED_READ".equals(acl)) {
-			this.acl = AccessControlList.REST_CANNED_AUTHENTICATED_READ;
+			this.acl = CannedAccessControlList.AuthenticatedRead;
 		} else {
 			throw new IllegalArgumentException("Unknown acl " + acl);
 		}
@@ -105,78 +105,44 @@ public class S3Repository extends AbstractRepository {
 	}
 
 	public List<String> list(String parent) throws IOException {
-		S3Bucket bucket = S3Utils.getBucket(parent);
+		String bucket = S3Utils.getBucket(parent);
 		String key = S3Utils.getKey(parent);
-
-		try {
-			S3Object[] objects = getService().listObjects(bucket, key, "");
-			List<String> keys = new ArrayList<String>(objects.length);
-			for (S3Object object : objects) {
-				keys.add("s3://" + bucket.getName() + "/" + object.getKey());
+		String marker = null;
+		List<String> keys = new ArrayList<String>();
+		do {
+			ObjectListing objects = getService().listObjects(new ListObjectsRequest()
+				.withBucketName(bucket)
+				.withPrefix(key)
+				.withMarker(marker));
+			for (S3ObjectSummary summary : objects.getObjectSummaries()) {
+				String uri = "s3://" + bucket + "/" + summary.getKey();
+				keys.add(uri);
+				resourceCache.put(uri, new S3Resource(service, summary));
 			}
-			return keys;
-		}
-		catch (S3ServiceException e) {
-			throw new S3RepositoryException(e);
-		}
+			marker = objects.getNextMarker();
+		} while (marker != null);
+		return keys;
 	}
 
 	@Override
 	protected void put(File source, String destination, boolean overwrite) throws IOException {
-		S3Bucket bucket = S3Utils.getBucket(destination);
+		String bucket = S3Utils.getBucket(destination);
 		String key = S3Utils.getKey(destination);
-		buildDestinationPath(bucket, getDestinationPath(key));
-
-		S3Object object = new S3Object(bucket, key);
-		object.setAcl(acl);
-		object.setDataInputFile(source);
-		object.setContentLength(source.length());
-		try {
-			getService().putObject(bucket, object);
-		}
-		catch (S3ServiceException e) {
-			throw new S3RepositoryException(e);
-		}
+		getService().putObject(new PutObjectRequest(bucket, key, source).withCannedAcl(acl));
 	}
 
-	private S3Service getService() {
+	private AmazonS3 getService() {
 		if (service == null) {
-			try {
-				service = new RestS3Service(getCredentials());
-			}
-			catch (S3ServiceException e) {
-				throw new S3RepositoryException(e);
-			}
+			service = new AmazonS3Client(getCredentials());
 		}
 		return service;
 	}
 
 	private AWSCredentials getCredentials() {
 		if (accessKey.length() > 0 && secretKey.length() > 0) {
-			return new AWSCredentials(accessKey, secretKey);
+			return new BasicAWSCredentials(accessKey, secretKey);
 		}
 		return null;
-	}
-
-	private void buildDestinationPath(S3Bucket bucket, String destination) {
-		S3Object object = new S3Object(bucket, destination + "/");
-		object.setAcl(acl);
-		object.setContentLength(0);
-		try {
-			getService().putObject(bucket, object);
-		}
-		catch (S3ServiceException e) {
-			throw new S3RepositoryException(e);
-		}
-
-		int index = destination.lastIndexOf('/');
-		if (index != -1) {
-			buildDestinationPath(bucket, destination.substring(0, index));
-		}
-	}
-
-	private String getDestinationPath(String destination) {
-		return destination.substring(0, destination.lastIndexOf('/'));
 	}
 
 }
