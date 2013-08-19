@@ -34,14 +34,17 @@ public class S3Resource implements Resource {
 
 	private final AmazonS3 service;
 	private final S3ObjectSummary summary;
+	private final String uri;
 
 	public S3Resource(AmazonS3 service, S3ObjectSummary summary) {
 		this.service = service;
 		this.summary = summary;
+		this.uri = "s3://" + summary.getBucketName() + "/" + summary.getKey();
 	}
 
 	public S3Resource(AmazonS3 service, String uri) {
 		this.service = service;
+		this.uri = uri;
 		ObjectListing objects = service.listObjects(S3Utils.getBucket(uri), S3Utils.getKey(uri));
 		if (objects.getObjectSummaries().size() == 0) {
 			summary = null;
@@ -67,7 +70,7 @@ public class S3Resource implements Resource {
 	}
 
 	public String getName() {
-		return "s3://" + summary.getBucketName() + "/" + summary.getKey();
+		return uri;
 	}
 
 	public boolean isLocal() {
