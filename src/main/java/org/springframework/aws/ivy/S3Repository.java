@@ -116,8 +116,10 @@ public class S3Repository extends AbstractRepository {
 				.withMarker(marker));
 			for (S3ObjectSummary summary : objects.getObjectSummaries()) {
 				String uri = "s3://" + bucket + "/" + summary.getKey();
-				keys.add(uri);
-				resourceCache.put(uri, new S3Resource(service, summary));
+				if (!uri.equals(parent)) {
+					keys.add(uri);
+					resourceCache.put(uri, new S3Resource(service, summary));
+				}
 			}
 			marker = objects.getNextMarker();
 		} while (marker != null);
